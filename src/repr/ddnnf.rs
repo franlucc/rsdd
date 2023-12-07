@@ -124,7 +124,6 @@ pub trait DDNNFPtr<'a>: Clone + Debug + PartialEq + Eq + Hash + Copy {
         T: 'static,
     {
 
-        println!("START_COUNT");
         self.fold_gr(|ddnnf| {
             use DDNNF::*;
             let verbose = false;
@@ -175,7 +174,7 @@ pub trait DDNNFPtr<'a>: Clone + Debug + PartialEq + Eq + Hash + Copy {
                 Or(l, r, _, gr) => {
                     // for every lbl i in v, get grdaient vector then sum
                     let mut sum = vec![params.zero; gr.len()];
-                    println!("v: {:?}", gr);
+                    // println!("v: {:?}", gr);
                     for i in gr.iter() {
                         match i {
                             GradData::V(x, true)=> {
@@ -202,7 +201,7 @@ pub trait DDNNFPtr<'a>: Clone + Debug + PartialEq + Eq + Hash + Copy {
                     sum
                 }
                 And(l, r, gr) => {
-                    println!("gr: {:?}", gr);
+                    // println!("gr: {:?}", gr);
                     if verbose || special {
                         println!("and l: {:?}, r: {:?}", l, r);
                     }
@@ -229,7 +228,7 @@ pub trait DDNNFPtr<'a>: Clone + Debug + PartialEq + Eq + Hash + Copy {
                                 // let iu = x.value() as usize;
                                 let mut grad : &mut Vec<T> = &mut params.var_gradient(*x).clone();
 
-                                println!("negating");
+                                // println!("negating");
                                 for j in 0..grad.len() {
                                     grad[j] =  grad[j].neg();
                                 }
