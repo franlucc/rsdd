@@ -76,32 +76,32 @@ pub trait DDNNFPtr<'a>: Clone + Debug + PartialEq + Eq + Hash + Copy {
     where
         T: 'static,
     {
-        println!("START_COUNT");
+        // println!("START_COUNT");
         self.fold(|ddnnf| {
             use DDNNF::*;
             match ddnnf {
                 Or(l, r, _,_) => {
-                    println!("or l: {:?}, r: {:?}", l, r);
+                    // println!("or l: {:?}, r: {:?}", l, r);
                     l + r},
                 And(l, r, _) => {
-                    println!("and l: {:?}, r: {:?}", l, r);
+                    // println!("and l: {:?}, r: {:?}", l, r);
                     l * r},
                 True => {
-                    println!("TRUE 1");
+                    // println!("TRUE 1");
                     params.one
                 },
                 False => {
-                    println!("FALSE 0");
+                    // println!("FALSE 0");
                     params.zero
                 }
                 Lit(lbl, polarity) => {
                     let (low_w, high_w) = params.var_weight(lbl);
                     // println!("lit lbl: {:?}, polarity: {:?}", lbl, polarity);
                     if polarity {
-                        println!("low_w: {:?}, HIGH_W: {:?}", low_w, high_w);
+                        // println!("low_w: {:?}, HIGH_W: {:?}", low_w, high_w);
                         *high_w
                     } else {
-                        println!("LOW_W: {:?}, high_w: {:?}", low_w, high_w);
+                        // println!("LOW_W: {:?}, high_w: {:?}", low_w, high_w);
                         *low_w
                     }
                 }
