@@ -170,7 +170,7 @@ pub trait DDNNFPtr<'a>: Clone + Debug + PartialEq + Eq + Hash + Copy {
         }, |ddnnf| {
             use DDNNF::*;
             let verbose = false;
-            let special = true;
+            let special = false;
             match ddnnf {
                 Or(l, r, _, gr) => {
                     // for every lbl i in v, get grdaient vector then sum

@@ -297,7 +297,7 @@ impl<'a> DDNNFPtr<'a> for SddPtr<'a> {
                         let mut ag = g(DDNNF::False);
                         
                         for and in ptr.node_iter() {
-                            println!("AND: {:?}", and);
+                            // println!("AND: {:?}", and);
                             // collect all Var in the AND
                             let mut vars : Vec<GradData<T>> = vec![];
                             
@@ -333,21 +333,21 @@ impl<'a> DDNNFPtr<'a> for SddPtr<'a> {
 
                             // let v = VarSet::new();
                             let a = f(DDNNF::And(p_sub, s_sub, vec![]));
-                            println!("A: {:?}", a);
-                            println!("vars: {:?}", vars);
+                            // println!("A: {:?}", a);
+                            // println!("vars: {:?}", vars);
                             // if prime_neg {
                             //     let l = or_v;
                             // }
-                            println!("p_sub: {:?}", p_sub);
-                            println!("s_sub: {:?}", s_sub);
+                            // println!("p_sub: {:?}", p_sub);
+                            // println!("s_sub: {:?}", s_sub);
                             let ag_t = g(DDNNF::And(p_sub, s_sub, vars));
-                            println!("AG_T: {:?}", ag_t);
+                            // println!("AG_T: {:?}", ag_t);
                             // add ag_t to ag, assume same len
                             // [x,y] [a,b] -> [x+a, y+b]
                             // type vec<t>
                             ag[0] = f(DDNNF::Or(ag[0], ag_t[0], VarSet::new(), vec![]));
                             ag[1] = f(DDNNF::Or(ag[1], ag_t[1], VarSet::new(), vec![]));
-                            println!("AG AND: {:?}", ag);
+                            // println!("AG AND: {:?}", ag);
                             or_v = f(DDNNF::Or(or_v, a, VarSet::new(), vec![]));
                         }
 
@@ -358,8 +358,8 @@ impl<'a> DDNNFPtr<'a> for SddPtr<'a> {
                             ptr.set_scratch::<DDNNFCache<(T,Vec<T>)>>((cached, Some((or_v, ag.clone()))));
                         }
                         // TODO: better AG
-                        println!("AG-FIN: {:?}", ag);
-                        println!("OR_V: {:?}", or_v);
+                        // println!("AG-FIN: {:?}", ag);
+                        // println!("OR_V: {:?}", or_v);
                         (or_v, ag)
                     };
 
