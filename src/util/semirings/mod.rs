@@ -3,7 +3,7 @@ mod expectation;
 mod finitefield;
 mod rational;
 mod realsemiring;
-mod semiring_traits;
+pub mod semiring_traits;
 mod tropical;
 
 pub use self::boolean::*;

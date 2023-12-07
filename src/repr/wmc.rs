@@ -6,6 +6,7 @@ use core::fmt::Debug;
 use std::collections::HashMap;
 /// Weighted model counting parameters for a BDD. It primarily is a storage for
 /// the weight on each variable.
+
 #[derive(Clone)]
 pub struct WmcParams<T: Semiring> {
     pub zero: T,
@@ -13,7 +14,9 @@ pub struct WmcParams<T: Semiring> {
     /// a vector which maps variable labels to `(low, high)`
     /// valuations.
     var_to_val: Vec<Option<(T, T)>>,
+    var_to_grad: Vec<Option<Vec<T>>>,
 }
+
 
 impl<T: Semiring> WmcParams<T> {
     /// Parametrize a weighted model count (over a semiring) with default weights.
@@ -40,13 +43,35 @@ impl<T: Semiring> WmcParams<T> {
     /// ```
     pub fn new(var_to_val: HashMap<VarLabel, (T, T)>) -> WmcParams<T> {
         let mut var_to_val_vec: Vec<Option<(T, T)>> = vec![None; var_to_val.len()];
+        let mut var_to_grad_vec: Vec<Option<Vec<T>>> = vec![None; var_to_val.len()];
         for (key, value) in var_to_val.iter() {
             var_to_val_vec[key.value_usize()] = Some(*value);
+        }
+        for (key, _) in var_to_val.iter() {
+            var_to_grad_vec[key.value_usize()] = Some(vec![T::zero(); var_to_val.len()]);
         }
         WmcParams {
             zero: T::zero(),
             one: T::one(),
             var_to_val: var_to_val_vec,
+            var_to_grad: var_to_grad_vec,
+        }
+    }
+
+    pub fn new_with_gr(var_to_val: HashMap<VarLabel, (T, T)>, var_to_grad: HashMap<VarLabel, Vec<T>>) -> WmcParams<T> {
+        let mut var_to_val_vec: Vec<Option<(T, T)>> = vec![None; var_to_val.len()];
+        let mut var_to_grad_vec: Vec<Option<Vec<T>>> = vec![None; var_to_grad.len()];
+        for (key, value) in var_to_val.iter() {
+            var_to_val_vec[key.value_usize()] = Some(*value);
+        }
+        for (key, value) in var_to_grad.iter() {
+            var_to_grad_vec[key.value_usize()] = Some((*value.clone()).to_vec());
+        }
+        WmcParams {
+            zero: T::zero(),
+            one: T::one(),
+            var_to_val: var_to_val_vec,
+            var_to_grad: var_to_grad_vec,
         }
     }
 
@@ -133,6 +158,15 @@ impl<T: Semiring> WmcParams<T> {
     pub fn var_weight(&self, label: VarLabel) -> &(T, T) {
         return (self.var_to_val[label.value_usize()]).as_ref().unwrap();
     }
+
+    pub fn var_gradient(&self, label: VarLabel) -> &Vec<T> {
+        return (self.var_to_grad[label.value_usize()]).as_ref().unwrap();
+    }
+
+    pub fn grad_len(&self) -> usize {
+        // cast this to T
+        return self.var_to_grad.len();
+    }
 }
 
 impl<T: Semiring> Debug for WmcParams<T> {
@@ -175,6 +209,7 @@ impl<T: Semiring> Default for WmcParams<T> {
             zero: T::zero(),
             one: T::one(),
             var_to_val: Vec::new(),
+            var_to_grad: Vec::new(),
         }
     }
 }

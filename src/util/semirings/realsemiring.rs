@@ -70,6 +70,19 @@ impl MeetSemilattice for RealSemiring {
     }
 }
 
+use core::ops::Neg;
+impl Neg for RealSemiring {
+    type Output = RealSemiring;
+
+    fn neg(self) -> Self::Output {
+        if self.0 == 0.0 {
+            return RealSemiring(0.0);
+        } else {
+            return RealSemiring(-1.0 * self.0);
+        }
+    }
+}
+
 impl Lattice for RealSemiring {}
 
 impl EdgeboundingRing for RealSemiring {}

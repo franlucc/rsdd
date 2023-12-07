@@ -268,6 +268,8 @@ fn test_sdd_is_canonical() {
     }
 }
 
+
+
 #[cfg(test)]
 mod test_bdd_builder {
     use quickcheck::TestResult;
@@ -755,7 +757,6 @@ mod test_sdd_builder {
             if and != iff1 {
                 println!("Not equal:\n{}\n{}", builder.print_sdd(and), builder.print_sdd(iff1));
             }
-
             and == iff1
         }
     }
@@ -793,12 +794,19 @@ mod test_sdd_builder {
            let order : Vec<VarLabel> = (0..cnf.num_vars()).map(|x| VarLabel::new(x as u64)).collect();
            let builder = super::CompressionSddBuilder::new(VTree::even_split(&order, 3));
            let cnf_sdd = builder.compile_cnf(&cnf);
-           let sdd_res = cnf_sdd.semantic_hash(&weight_map);
+           println!("sdd: {}\n\n", builder.print_sdd(cnf_sdd));
+        //    let sdd_res = cnf_sdd.semantic_hash(&weight_map);
+           let sdd_res = cnf_sdd.unsmoothed_wmc(&weight_map);
 
 
             let bdd_builder = RobddBuilder::<AllIteTable<BddPtr>>::new_with_linear_order(cnf.num_vars());
             let cnf_bdd = bdd_builder.compile_cnf(&cnf);
             let bdd_res = cnf_bdd.semantic_hash( &weight_map);
+            println!("clauses: {:#?}\n\n", clauses);
+            println!("cnf: {}\n\n", cnf);
+            println!("bdd_res: {}\n\n", bdd_res);
+            println!("sdd_res: {}\n\n", sdd_res);
+
             assert_eq!(bdd_res, sdd_res);
             TestResult::passed()
         }
@@ -1110,6 +1118,8 @@ mod test_sdd_builder {
         }
     }
 }
+
+
 
 #[cfg(test)]
 mod test_dnnf_builder {

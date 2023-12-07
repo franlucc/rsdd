@@ -923,6 +923,15 @@ impl<'a> DDNNFPtr<'a> for BddPtr<'a> {
         }
     }
 
+    fn fold_gr<T: Clone + Copy + Debug + crate::util::semirings::semiring_traits::Semiring, F: Fn(DDNNF<T>)
+    -> T, G: Fn(DDNNF<T>) -> Vec<T>>(&self, f: F, _g : G) -> (T, Vec<T>)
+    where
+        T: 'static,
+    {
+        // Note: not implemented for bdd
+        return (f(DDNNF::True), vec![]);
+    }
+
     fn fold<T: Clone + Copy + Debug, F: Fn(DDNNF<T>) -> T>(&self, f: F) -> T
     where
         T: 'static,
@@ -954,14 +963,14 @@ impl<'a> DDNNFPtr<'a> for BddPtr<'a> {
                         let lit_high = f(DDNNF::Lit(top, true));
                         let lit_low = f(DDNNF::Lit(top, false));
 
-                        let and_low = f(DDNNF::And(lit_low, low_v));
-                        let and_high = f(DDNNF::And(lit_high, high_v));
+                        let and_low = f(DDNNF::And(lit_low, low_v, vec![]));
+                        let and_high = f(DDNNF::And(lit_high, high_v, vec![]));
 
                         // in a BDD, each decision only depends on the topvar
                         let mut varset = VarSet::new();
                         varset.insert(top);
 
-                        let or_v = f(DDNNF::Or(and_low, and_high, varset));
+                        let or_v = f(DDNNF::Or(and_low, and_high, varset,vec![]));
 
                         // cache and return or_v
                         if ptr.is_neg() {

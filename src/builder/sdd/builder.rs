@@ -369,7 +369,7 @@ pub trait SddBuilder<'a>: BottomUpBuilder<'a, SddPtr<'a>> {
                     let h = helper(bdd.high());
                     let mut doc: Doc<BoxDoc> = Doc::from("");
                     doc = doc.append(Doc::newline()).append(
-                        (Doc::from(format!("ITE {:?} {}", ptr, bdd.label().value()))
+                        (Doc::from(format!("ITE {:?} ====== {} ===", ptr, bdd.label().value()))
                             .append(Doc::newline())
                             .append(h.append(Doc::newline()).append(l)))
                         .nest(2),

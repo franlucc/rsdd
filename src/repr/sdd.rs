@@ -268,6 +268,128 @@ impl<'a> SddPtr<'a> {
 type DDNNFCache<T> = (Option<T>, Option<T>);
 
 impl<'a> DDNNFPtr<'a> for SddPtr<'a> {
+
+    fn fold_gr<T: Clone + Copy + Debug, F: Fn(DDNNF<T>)
+    -> T, G: Fn(DDNNF<T>) -> Vec<T>>(&self, f: F, g : G) -> (T, Vec<T>)
+    where
+        T: 'static,
+    {
+        debug_assert!(self.is_scratch_cleared());
+        fn bottomup_pass_h<T: 'static + Clone + Copy + Debug, F: Fn(DDNNF<T>) -> T,
+        G : Fn(DDNNF<T>) -> Vec<T>>(
+            ptr: SddPtr,
+            f: &F,
+            g: &G,
+        ) -> (T, Vec<T>) {
+            // f returns probabilities
+            use crate::repr::ddnnf::GradData;
+            match ptr {
+                PtrTrue => (f(DDNNF::True), g(DDNNF::True)),
+                PtrFalse => (f(DDNNF::False), g(DDNNF::False)),
+                Var(v, polarity) => (f(DDNNF::Lit(v, polarity)), g(DDNNF::Lit(v, polarity))),
+                Compl(_) | Reg(_) | ComplBDD(_) | BDD(_) => {
+                    // inside the cache, store a (compl, non_compl) pair corresponding to the
+                    // complemented and uncomplemented pass over this node
+
+                    // helper performs actual fold-and-cache work
+                    let bottomup_helper = |cached| {
+                        let mut or_v = f(DDNNF::False);
+                        let mut ag = g(DDNNF::False);
+                        
+                        for and in ptr.node_iter() {
+                            println!("AND: {:?}", and);
+                            // collect all Var in the AND
+                            let mut vars : Vec<GradData<T>> = vec![];
+                            
+                            let s = if ptr.is_neg() {
+                                and.sub().neg()
+                            } else {
+                                and.sub()
+                            };
+                            
+                            let mut prime_neg = false;
+                            let mut sub_neg = false;
+
+                            let (p_sub, pg_sub) = bottomup_pass_h(and.prime(), f, g);
+                            let (s_sub, sg_sub) = bottomup_pass_h(s, f, g);
+
+                            match and.prime() {
+                                Var(v, pol) => {
+                                    prime_neg = pol;
+                                    vars.push(GradData::V(v, pol))},
+                                PtrTrue => vars.push(GradData::True),
+                                PtrFalse => vars.push(GradData::False),
+                                _ => vars.push(GradData::Gr(pg_sub)),
+                            };
+                            match and.sub() {
+                                Var(v, pol) => {
+                                    sub_neg = pol;
+                                    vars.push(GradData::V(v, pol))
+                                },
+                                PtrTrue => vars.push(GradData::True),
+                                PtrFalse => vars.push(GradData::False),
+                                _ => vars.push(GradData::Gr(sg_sub)),
+                            };
+
+                            // let v = VarSet::new();
+                            let a = f(DDNNF::And(p_sub, s_sub, vec![]));
+                            println!("A: {:?}", a);
+                            println!("vars: {:?}", vars);
+                            // if prime_neg {
+                            //     let l = or_v;
+                            // }
+                            println!("p_sub: {:?}", p_sub);
+                            println!("s_sub: {:?}", s_sub);
+                            let ag_t = g(DDNNF::And(p_sub, s_sub, vars));
+                            println!("AG_T: {:?}", ag_t);
+                            // add ag_t to ag, assume same len
+                            // [x,y] [a,b] -> [x+a, y+b]
+                            // type vec<t>
+                            ag[0] = f(DDNNF::Or(ag[0], ag_t[0], VarSet::new(), vec![]));
+                            ag[1] = f(DDNNF::Or(ag[1], ag_t[1], VarSet::new(), vec![]));
+                            println!("AG AND: {:?}", ag);
+                            or_v = f(DDNNF::Or(or_v, a, VarSet::new(), vec![]));
+                        }
+
+                        // cache and return or_v
+                        if ptr.is_neg() {
+                            ptr.set_scratch::<DDNNFCache<(T,Vec<T>)>>((Some((or_v, ag.clone())), cached));
+                        } else {
+                            ptr.set_scratch::<DDNNFCache<(T,Vec<T>)>>((cached, Some((or_v, ag.clone()))));
+                        }
+                        // TODO: better AG
+                        println!("AG-FIN: {:?}", ag);
+                        println!("OR_V: {:?}", or_v);
+                        (or_v, ag)
+                    };
+
+                    match ptr.scratch::<DDNNFCache<(T,Vec<T>)>>() {
+                        // first, check if cached; explicit arms here for clarity
+                        Some((Some((l,lg)), Some((h,hg)))) => {
+                            if ptr.is_neg() {
+                                (l, lg)
+                            } else {
+                                (h, hg)
+                            }
+                        }
+                        Some((Some((v, vg)), None)) if ptr.is_neg() => (v, vg),
+                        Some((None, Some((v,vg)))) if !ptr.is_neg() => (v, vg),
+                        // no cached value found, compute it
+                        Some((None, cached)) | Some((cached, None)) => bottomup_helper(cached),
+                        None => bottomup_helper(None),
+                    }
+                }
+            }
+        }
+
+        let r = bottomup_pass_h(*self, &f, &g);
+        self.clear_scratch();
+        r
+    }
+
+    
+
+
     fn fold<T: 'static + Clone + Copy + std::fmt::Debug, F: Fn(super::ddnnf::DDNNF<T>) -> T>(
         &self,
         f: F,
@@ -296,9 +418,9 @@ impl<'a> DDNNFPtr<'a> for SddPtr<'a> {
                             };
                             let p_sub = bottomup_pass_h(and.prime(), f);
                             let s_sub = bottomup_pass_h(s, f);
-                            let a = f(DDNNF::And(p_sub, s_sub));
+                            let a = f(DDNNF::And(p_sub, s_sub, vec![]));
                             let v = VarSet::new();
-                            or_v = f(DDNNF::Or(or_v, a, v));
+                            or_v = f(DDNNF::Or(or_v, a, v, vec![]));
                         }
 
                         // cache and return or_v
